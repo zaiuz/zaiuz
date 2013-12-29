@@ -1,26 +1,24 @@
-package router
+package zaiuz
 
 import "net/http"
 import "github.com/gorilla/mux"
-import "../context"
-import "../modules"
 
 type Router struct {
-	parent *Router
-	router *mux.Router
-	modules []modules.Module
+	parent  *Router
+	router  *mux.Router
+	modules []Module
 }
 
 var _ http.Handler = &Router{}
 
-type Action func(ctx *context.Context)
+type Action func(ctx *Context)
 
 func NewRouter() *Router {
-	modules := make([]modules.Module, 0, context.InitialContextCapacity)
+	modules := make([]Module, 0, InitialContextCapacity)
 	return &Router{nil, mux.NewRouter(), modules}
 }
 
-func (router *Router) Modules() []modules.Module {
+func (router *Router) Modules() []Module {
 	if router.parent == nil {
 		return router.modules
 	} else {
@@ -30,7 +28,7 @@ func (router *Router) Modules() []modules.Module {
 
 func (router *Router) Subrouter(path string) *Router {
 	subrouter := router.router.PathPrefix(path).Subrouter()
-	result := &Router{router, subrouter, []modules.Module{}}
+	result := &Router{router, subrouter, []Module{}}
 	return result
 }
 
@@ -38,7 +36,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.router.ServeHTTP(w, r)
 }
 
-func (router *Router) Include(m ... modules.Module) {
+func (router *Router) Include(m ...Module) {
 	router.modules = append(router.modules, m...)
 }
 
@@ -64,7 +62,7 @@ func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.
 	modules := router.Modules() // resolve module list w/ parents
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.NewContext(w, r)
+		ctx := NewContext(w, r)
 
 		for _, mod := range modules {
 			// TODO: Handle attach/detach errors. panic?
@@ -76,4 +74,3 @@ func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.
 		action(ctx)
 	}
 }
-

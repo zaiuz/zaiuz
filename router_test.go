@@ -1,25 +1,23 @@
-package router
+package zaiuz
 
 import "net/http/httptest"
 import "testing"
 import "time"
 import a "github.com/stretchr/testify/assert"
-import "../context"
-import "../modules"
-import "../testutil"
+import "./testutil"
 
 const TextForGet string = "GETGETGET"
 const TextForPost string = "POSTPOSTPOST"
 const TextForGetPost string = TextForGet + TextForPost
 
-type DummyModule struct{
+type DummyModule struct {
 	attachCalled bool
-	attachTime time.Time
+	attachTime   time.Time
 	detachCalled bool
-	detachTime time.Time
+	detachTime   time.Time
 }
 
-var _ modules.Module = new(DummyModule)
+var _ Module = new(DummyModule)
 
 func (m *DummyModule) Reset() {
 	zero := time.Unix(0, 0)
@@ -27,13 +25,13 @@ func (m *DummyModule) Reset() {
 	m.attachTime, m.detachTime = zero, zero
 }
 
-func (m *DummyModule) Attach(c *context.Context) error {
+func (m *DummyModule) Attach(c *Context) error {
 	m.attachCalled = true
 	m.attachTime = time.Now()
 	return nil
 }
 
-func (m *DummyModule) Detach(c *context.Context) error {
+func (m *DummyModule) Detach(c *Context) error {
 	m.detachCalled = true
 	m.detachTime = time.Now()
 	return nil
@@ -43,7 +41,7 @@ func TestNewRouter(t *testing.T) {
 	router := NewRouter()
 	a.Nil(t, router.parent, "new router should not have parent.")
 	a.NotNil(t, router.router, "mux router not initialized.")
-	a.Equal(t, cap(router.modules), context.InitialContextCapacity,
+	a.Equal(t, cap(router.modules), InitialContextCapacity,
 		"modules slice capacity mismatch.")
 }
 
@@ -107,7 +105,7 @@ func TestSubrouterRouting(t *testing.T) {
 	server := newTestServer(func(router *Router) {
 		router.Get("/", stringAction(TextForGet))
 		section := router.Subrouter("/section")
-		section.Get("/", stringAction(TextForGet + "inner"))
+		section.Get("/", stringAction(TextForGet+"inner"))
 	})
 	defer server.Close()
 
@@ -129,7 +127,8 @@ func TestModuleInvocation(t *testing.T) {
 	})
 	defer server.Close()
 
-	outer.Reset(); inner.Reset()
+	outer.Reset()
+	inner.Reset()
 
 	testutil.HttpGet(t, server.URL).Expect(200, TextForGet)
 	a.True(t, outer.attachCalled, "outer module not attached.")
@@ -138,7 +137,8 @@ func TestModuleInvocation(t *testing.T) {
 	a.False(t, inner.attachCalled, "inner module incorrectly attached.")
 	a.False(t, inner.detachCalled, "inner module incorrectly detached.")
 
-	outer.Reset(); inner.Reset()
+	outer.Reset()
+	inner.Reset()
 
 	testutil.HttpGet(t, server.URL+"/section/").Expect(200, TextForGet)
 	a.True(t, outer.attachCalled, "outer module not attached.")
@@ -157,12 +157,12 @@ func newTestServer(setup func(router *Router)) *httptest.Server {
 }
 
 func stringAction(text string) Action {
-	return Action(func(c *context.Context) {
+	return Action(func(c *Context) {
 		c.ResponseWriter.Write([]byte(text))
 	})
 }
 
-func moduleListEquals(a, b []modules.Module) bool {
+func moduleListEquals(a, b []Module) bool {
 	switch {
 	case len(a) != len(b):
 		return false

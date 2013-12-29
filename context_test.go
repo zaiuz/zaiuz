@@ -1,7 +1,7 @@
-package context
+package zaiuz
 
 import "testing"
-import "../testutil"
+import "./testutil"
 import a "github.com/stretchr/testify/assert"
 
 func TestNewContext(t *testing.T) {

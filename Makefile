@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-PKG := ./context ./router ./modules ./modules/sessions
+PKG := . ./testutil
 BIN := $(shell basename `pwd`)
 GO  := $(realpath ./go)
 
