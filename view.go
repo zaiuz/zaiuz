@@ -35,10 +35,10 @@ func (view *HtmlView) Subview(filenames ...string) *HtmlView {
 	return NewHtmlView(append(view.filenames, filenames...)...)
 }
 
-func (view *HtmlView) Render(c *Context) error {
+func (view *HtmlView) Render(c *Context, data interface{}) error {
 	// TODO: Configurable/overridable content type support
 	w := c.ResponseWriter
 	w.Header()["Content-Type"] = []string{"text/html"}
-	return view.template.Execute(w, view)
+	return view.template.Execute(w, data)
 }
 

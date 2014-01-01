@@ -5,6 +5,7 @@ import "net/http/httptest"
 import "testing"
 import "./testutil"
 import "regexp"
+import "code.google.com/p/go-uuid/uuid"
 import a "github.com/stretchr/testify/assert"
 
 const (
@@ -14,6 +15,12 @@ const (
 	childFile          = "./testviews/child.html"
 	combinedFileOutput = "./testviews/combined.output.html"
 )
+
+type TestData string
+
+func NewTestData() TestData {
+	return TestData(uuid.New())
+}
 
 func TestNewHtmlView(t *testing.T) {
 	test := func() { NewHtmlView() }
@@ -55,35 +62,35 @@ func TestRenderCombined(t *testing.T) {
 	parent := NewHtmlView(parentFile)
 	child := parent.Subview(childFile)
 
-	result, e := renderToString(child)
+	result, e := renderToString(child, nil)
 	a.NoError(t, e)
 	a.Equal(t, string(result), string(output), "combined result wrong.")
 }
 
 func renderEqual(t *testing.T, view *HtmlView, expected []byte) {
-	result, e := renderToString(view)
+	result, e := renderToString(view, nil)
 	a.NoError(t, e)
 	a.Equal(t, string(result), string(expected), "render result mismatch.")
 }
 
-func renderMatch(t *testing.T, view *HtmlView, pattern string) {
+func renderMatch(t *testing.T, view *HtmlView, data interface{}, pattern string) {
 	re := regexp.MustCompile(pattern)
-	result, e := renderToString(view)
+	result, e := renderToString(view, data)
 
 	a.NoError(t, e)
 	a.NotNil(t, re.FindString(result), "render output does not match pattern.")
 }
 
 func renderFail(t *testing.T, view *HtmlView) {
-	_, e := renderToString(view)
+	_, e := renderToString(view, nil)
 	a.Error(t, e, "expected rendering to fail.")
 }
 
-func renderToString(view *HtmlView) (string, error) {
+func renderToString(view *HtmlView, data interface{}) (string, error) {
 	response, request := testutil.NewTestRequestPair()
 	context := NewContext(response, request)
 
-	e := view.Render(context)
+	e := view.Render(context, data)
 	if e != nil {
 		return "", e
 	}
