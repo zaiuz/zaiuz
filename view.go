@@ -12,8 +12,6 @@ const RootTemplateName = "root"
 
 // Represents a single html/template template. Encapsulate the template pathname from
 // controller action code and allows further subviews based on this view.
-//
-// See the view_example_test.go file for more information.
 type HtmlView struct{
 	template *tmpl.Template
 	filenames []string

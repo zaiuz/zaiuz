@@ -16,7 +16,7 @@ type ChildViewData struct{
 	Content string
 }
 
-func ExampleRender() {
+func ExampleHtmlView() {
 	parent := &ParentViewData{ Title: "ExampleRender Test Title" }
 	child := &ChildViewData{
 		ParentViewData: parent,
