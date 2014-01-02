@@ -5,7 +5,7 @@ import "fmt"
 import "database/sql/driver"
 
 // Represents a GUID database key. This type implements driver.Valuer and sql.Scanner so
-// can use as your model's Key type directly.
+// you can use this as your model's Key type directly.
 type Key string
 
 // Returns a new GUID key.
