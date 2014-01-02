@@ -98,4 +98,3 @@ func renderToString(view *HtmlView, data interface{}) (string, error) {
 	resp := context.ResponseWriter.(*httptest.ResponseRecorder)
 	return string(resp.Body.Bytes()), nil
 }
-

@@ -6,21 +6,23 @@ import "net/http/httptest"
 import "./testutil"
 
 var ParentView = NewHtmlView("./testviews/example-parent.html")
-type ParentViewData struct{
+
+type ParentViewData struct {
 	Title string
 }
 
 var ChildView = ParentView.Subview("./testviews/example-child.html")
-type ChildViewData struct{
+
+type ChildViewData struct {
 	*ParentViewData
 	Content string
 }
 
 func ExampleHtmlView() {
-	parent := &ParentViewData{ Title: "ExampleRender Test Title" }
+	parent := &ParentViewData{Title: "ExampleRender Test Title"}
 	child := &ChildViewData{
 		ParentViewData: parent,
-		Content: "The quick brown fox jumps over the lazy dog.",
+		Content:        "The quick brown fox jumps over the lazy dog.",
 	}
 
 	response, request := testutil.NewTestRequestPair()
@@ -44,4 +46,3 @@ func ExampleHtmlView() {
 	// </body>
 	// </html>
 }
-

@@ -12,8 +12,8 @@ const RootTemplateName = "root"
 
 // Represents a single html/template template. Encapsulate the template pathname from
 // controller action code and allows further subviews based on this view.
-type HtmlView struct{
-	template *tmpl.Template
+type HtmlView struct {
+	template  *tmpl.Template
 	filenames []string
 }
 
@@ -51,4 +51,3 @@ func (view *HtmlView) Render(c *Context, data interface{}) error {
 	w.Header()["Content-Type"] = []string{"text/html"}
 	return view.template.Execute(w, data)
 }
-

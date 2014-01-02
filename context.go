@@ -58,4 +58,3 @@ func (c *Context) Set(key string, value interface{}) {
 func (c *Context) Delete(key string) {
 	delete(c.objects, key)
 }
-
