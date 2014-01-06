@@ -71,26 +71,50 @@ func renderEqual(t *testing.T, view *HtmlView, expected []byte) {
 	result, e := renderToString(view, nil)
 	a.NoError(t, e)
 	a.Equal(t, string(result), string(expected), "render result mismatch.")
+
+	result = mustRenderToString(view, nil)
+	a.Equal(t, string(result), string(expected), "render result mismatch.")
 }
 
 func renderMatch(t *testing.T, view *HtmlView, data interface{}, pattern string) {
 	re := regexp.MustCompile(pattern)
-	result, e := renderToString(view, data)
 
+	result, e := renderToString(view, data)
 	a.NoError(t, e)
+	a.NotNil(t, re.FindString(result), "render output does not match pattern.")
+
+	result = mustRenderToString(view, data)
 	a.NotNil(t, re.FindString(result), "render output does not match pattern.")
 }
 
 func renderFail(t *testing.T, view *HtmlView) {
 	_, e := renderToString(view, nil)
 	a.Error(t, e, "expected rendering to fail.")
+
+	test := func() { mustRenderToString(view, nil) }
+	a.Panics(t, test, "expected rendering to panic.")
 }
 
 func renderToString(view *HtmlView, data interface{}) (string, error) {
+	return renderToStringCore(view.Render, data)
+}
+
+func mustRenderToString(view *HtmlView, data interface{}) string {
+	renderer := renderFunc(func(context *Context, data_ interface{}) error {
+		view.MustRender(context, data_)
+		return nil
+	})
+
+	result, _ := renderToStringCore(renderer, data)
+	return result
+}
+
+type renderFunc func(*Context, interface{}) error
+func renderToStringCore(renderer renderFunc, data interface{}) (string, error) {
 	response, request := testutil.NewTestRequestPair()
 	context := NewContext(response, request)
 
-	e := view.Render(context, data)
+	e := renderer(context, data)
 	if e != nil {
 		return "", e
 	}
