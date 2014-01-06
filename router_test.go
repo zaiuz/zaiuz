@@ -2,6 +2,7 @@ package zaiuz
 
 import "net/http/httptest"
 import "testing"
+import "fmt"
 import "time"
 import a "github.com/stretchr/testify/assert"
 import "./testutil"
@@ -17,7 +18,10 @@ type DummyModule struct {
 	detachTime   time.Time
 }
 
+type PanicModule struct{}
+
 var _ Module = new(DummyModule)
+var _ Module = new(PanicModule)
 
 func (m *DummyModule) Reset() {
 	zero := time.Unix(0, 0)
@@ -35,6 +39,14 @@ func (m *DummyModule) Detach(c *Context) error {
 	m.detachCalled = true
 	m.detachTime = time.Now()
 	return nil
+}
+
+func (p *PanicModule) Attach(c *Context) error {
+	return fmt.Errorf("PanicModule test error.")
+}
+
+func (p *PanicModule) Detach(c *Context) error {
+	return fmt.Errorf("PanicModule test error.")
 }
 
 func TestNewRouter(t *testing.T) {
@@ -112,6 +124,15 @@ func TestSubrouterRouting(t *testing.T) {
 	// TODO: Handle missing '/'
 	testutil.HttpGet(t, server.URL).Expect(200, TextForGet)
 	testutil.HttpGet(t, server.URL+"/section/").Expect(200, TextForGet+"inner")
+}
+
+func TestModulePanic(t *testing.T) {
+	server := newTestServer(func(router *Router) {
+		router.Include(new(PanicModule))
+		router.Get("/", stringAction(TextForGet))
+	})
+
+	testutil.HttpGet(t, server.URL).ExpectPattern(500, "^PanicModule")
 }
 
 func TestModuleInvocation(t *testing.T) {

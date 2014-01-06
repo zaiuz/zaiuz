@@ -1,5 +1,6 @@
 package zaiuz
 
+import "fmt"
 import "net/http"
 import "github.com/gorilla/mux"
 
@@ -77,16 +78,31 @@ func (router *Router) GetPost(path string, action Action) *Router {
 }
 
 func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.Request) {
-	modules := router.Modules() // resolve module list w/ parents
+	modules := router.Modules() // resolve module list w/ parents immediately
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := NewContext(w, r)
+		defer func() {
+			if r := recover(); r != nil {
+				// TODO: Errors after WriteHead?
+				w.WriteHeader(500)
+				w.Write([]byte(fmt.Sprintf("%s", r)))
+			}
+		}()
 
 		for _, mod := range modules {
-			// TODO: Handle attach/detach errors. panic?
 			// TODO: Detach should be given chance to recover from errors.
-			mod.Attach(ctx)
-			defer mod.Detach(ctx)
+			e := mod.Attach(ctx)
+			if e != nil {
+				panic(e) // TODO: Better handover to http pkg??
+			}
+
+			defer func(m Module) {
+				e := m.Detach(ctx)
+				if e != nil {
+					panic(e) // TODO: Better handover to http pkg?
+				}
+			}(mod)
 		}
 
 		action(ctx)

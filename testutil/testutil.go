@@ -5,6 +5,7 @@ import "net/url"
 import "net/http"
 import "net/http/httptest"
 import "testing"
+import "regexp"
 import a "github.com/stretchr/testify/assert"
 
 // Method chain context object. Do not use directly, use one of the Http* method to obtain
@@ -38,6 +39,18 @@ func (r *ResponseExpectable) Expect(code int, body string) {
 		raw, e := ioutil.ReadAll(r.Response.Body)
 		a.NoError(r.T, e, "error while reading response.")
 		a.Equal(r.T, string(raw), body, "wrong response body.")
+	}
+}
+
+func (r *ResponseExpectable) ExpectPattern(code int, pattern string) {
+	a.NoError(r.T, r.Error, "error while getting response.")
+	a.Equal(r.T, r.Response.StatusCode, code, "wrong status code.")
+
+	if len(pattern) > 0 {
+		re := regexp.MustCompile(pattern)
+		raw, e := ioutil.ReadAll(r.Response.Body)
+		a.NoError(r.T, e, "error while reading response.")
+		a.True(r.T, re.Match(raw), "response body does not match pattern.")
 	}
 }
 
