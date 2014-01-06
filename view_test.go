@@ -39,6 +39,19 @@ func TestSubview(t *testing.T) {
 	a.NotNil(t, result, "subview is nil errorneously.")
 }
 
+func TestRenderContentType(t *testing.T) {
+	singleView := NewHtmlView(singleFile)
+	response, request := testutil.NewTestRequestPair()
+	context := NewContext(response, request)
+	singleView.Render(context, nil)
+
+	recorder := response.(*httptest.ResponseRecorder)
+	contentType := recorder.HeaderMap["Content-Type"]
+
+	a.NotEmpty(t, contentType, "Content-Type header was nil or empty.")
+	a.Contains(t, contentType[0], "text/html", "Content-Type not text/html.")
+}
+
 func TestRenderSingle(t *testing.T) {
 	singleView := NewHtmlView(singleFile)
 	output, e := ioutil.ReadFile(singleFileOutput)
