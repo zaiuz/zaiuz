@@ -2,6 +2,7 @@ package zaiuz
 
 import "net/http/httptest"
 import "testing"
+import "io/ioutil"
 import "fmt"
 import "time"
 import a "github.com/stretchr/testify/assert"
@@ -113,6 +114,18 @@ func TestMethodRouting(t *testing.T) {
 	testutil.HttpPost(t, server.URL+"/twins", nil).Expect(200, TextForGetPost)
 }
 
+func TestStaticFiles(t *testing.T) {
+	server := newTestServer(func(router *Router) {
+		router.Static("/files", "./testviews")
+	})
+	defer server.Close()
+
+	content, e := ioutil.ReadFile("./testviews/single.html")
+	a.NoError(t, e)
+
+	testutil.HttpGet(t, server.URL+"/files/single.html").Expect(200, string(content))
+}
+
 func TestSubrouterRouting(t *testing.T) {
 	server := newTestServer(func(router *Router) {
 		router.Get("/", stringAction(TextForGet))
@@ -138,6 +151,7 @@ func TestModulePanic(t *testing.T) {
 func TestModuleInvocation(t *testing.T) {
 	outer, inner := new(DummyModule), new(DummyModule)
 
+	// TODO: Test that static files still cause modules  to be invoked.
 	server := newTestServer(func(router *Router) {
 		router.Include(outer)
 		router.Get("/", stringAction(TextForGet))

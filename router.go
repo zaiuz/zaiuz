@@ -77,6 +77,13 @@ func (router *Router) GetPost(path string, action Action) *Router {
 	return router
 }
 
+func (router *Router) Static(urlPath, filePath string) *Router {
+	// TODO: Allow action shim to still be applied
+	fs := http.StripPrefix(urlPath, http.FileServer(http.Dir(filePath)))
+	router.router.PathPrefix(urlPath).Methods("GET").Handler(fs)
+	return router
+}
+
 func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.Request) {
 	modules := router.Modules() // resolve module list w/ parents immediately
 
