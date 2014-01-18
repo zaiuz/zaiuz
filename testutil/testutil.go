@@ -32,7 +32,10 @@ func HttpPost(t *testing.T, url string, data url.Values) *ResponseExpectable {
 
 // Reads the response body and tests if the response parameters match supplied values.
 func (r *ResponseExpectable) Expect(code int, body string) {
-	a.NoError(r.T, r.Error, "error while getting response.")
+	if code < 500 {
+		a.NoError(r.T, r.Error, "error while getting response.")
+	}
+
 	a.Equal(r.T, r.Response.StatusCode, code, "invalid status code.")
 
 	if len(body) > 0 {
@@ -43,7 +46,15 @@ func (r *ResponseExpectable) Expect(code int, body string) {
 }
 
 func (r *ResponseExpectable) ExpectPattern(code int, pattern string) {
-	a.NoError(r.T, r.Error, "error while getting response.")
+	if code < 500 {
+		a.NoError(r.T, r.Error, "error while getting response.")
+	}
+
+	if r.Response == nil {
+		a.Fail(r.T, "response is nil.")
+		return
+	}
+
 	a.Equal(r.T, r.Response.StatusCode, code, "wrong status code.")
 
 	if len(pattern) > 0 {

@@ -10,5 +10,6 @@ package zaiuz
 type Module interface {
 	Attach(ctx *Context) error
 	Detach(ctx *Context) error
+	Recover(ctx *Context, e interface{}) bool
 	// TODO: Recover(ctx *context.Context, e error)
 }

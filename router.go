@@ -1,6 +1,5 @@
 package zaiuz
 
-import "fmt"
 import "net/http"
 import "github.com/gorilla/mux"
 
@@ -90,24 +89,35 @@ func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := NewContext(w, r)
 		defer func() {
-			if r := recover(); r != nil {
-				// TODO: Errors after WriteHead?
-				w.WriteHeader(500)
-				w.Write([]byte(fmt.Sprintf("%s", r)))
+			e, recovered := recover(), false
+			if e == nil {
+				return
+			}
+
+			// TODO: Should recover in reverse.
+			// TODO: Should not print any text.
+			for _, mod := range modules {
+				if mod.Recover(ctx, e) {
+					recovered = true
+					break
+				}
+			}
+
+			if !recovered {
+				panic(e) // let server print out the logs, otherwise error will be silenced.
 			}
 		}()
 
 		for _, mod := range modules {
-			// TODO: Detach should be given chance to recover from errors.
 			e := mod.Attach(ctx)
 			if e != nil {
-				panic(e) // TODO: Better handover to http pkg??
+				panic(e)
 			}
 
 			defer func(m Module) {
 				e := m.Detach(ctx)
 				if e != nil {
-					panic(e) // TODO: Better handover to http pkg?
+					panic(e)
 				}
 			}(mod)
 		}
