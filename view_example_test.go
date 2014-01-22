@@ -3,7 +3,7 @@ package zaiuz
 import "io"
 import "os"
 import "net/http/httptest"
-import "./testutil"
+import "github.com/zaiuz/testutil"
 
 var ParentView = NewHtmlView("./testviews/example-parent.html")
 

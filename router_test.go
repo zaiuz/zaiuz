@@ -6,7 +6,7 @@ import "io/ioutil"
 import "fmt"
 import "time"
 import a "github.com/stretchr/testify/assert"
-import "./testutil"
+import "github.com/zaiuz/testutil"
 
 const TextForGet string = "GETGETGET"
 const TextForPost string = "POSTPOSTPOST"

@@ -3,7 +3,7 @@ package zaiuz
 import "io/ioutil"
 import "net/http/httptest"
 import "testing"
-import "./testutil"
+import "github.com/zaiuz/testutil"
 import "regexp"
 import "code.google.com/p/go-uuid/uuid"
 import a "github.com/stretchr/testify/assert"
@@ -123,6 +123,7 @@ func mustRenderToString(view *HtmlView, data interface{}) string {
 }
 
 type renderFunc func(*Context, interface{}) error
+
 func renderToStringCore(renderer renderFunc, data interface{}) (string, error) {
 	response, request := testutil.NewTestRequestPair()
 	context := NewContext(response, request)

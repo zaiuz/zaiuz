@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-PKG := . ./testutil
+PKG := .
 BIN := $(shell basename `pwd`)
 GO  := $(realpath ./go)
 

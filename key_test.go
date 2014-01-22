@@ -33,4 +33,3 @@ func TestValue(t *testing.T) {
 	a.NoError(t, e)
 	a.Equal(t, v, driver.Value(string(k)), "wrong driver value generated.")
 }
-
