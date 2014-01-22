@@ -1,4 +1,4 @@
-package zaiuz
+package zaiuz_test
 
 import "io/ioutil"
 import "net/http/httptest"
@@ -6,6 +6,7 @@ import "testing"
 import "github.com/zaiuz/testutil"
 import "regexp"
 import "code.google.com/p/go-uuid/uuid"
+import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
 
 const (

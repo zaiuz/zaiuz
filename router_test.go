@@ -1,10 +1,11 @@
-package zaiuz
+package zaiuz_test
 
 import "net/http/httptest"
 import "testing"
 import "io/ioutil"
 import "fmt"
 import "time"
+import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
 import "github.com/zaiuz/testutil"
 
@@ -52,9 +53,9 @@ func (p *PanicModule) Detach(c *Context) error {
 
 func TestNewRouter(t *testing.T) {
 	router := NewRouter()
-	a.Nil(t, router.parent, "new router should not have parent.")
-	a.NotNil(t, router.router, "mux router not initialized.")
-	a.Equal(t, cap(router.modules), InitialContextCapacity,
+	a.Nil(t, router.Parent(), "new router should not have parent.")
+	a.NotNil(t, router.Router(), "mux router not initialized.")
+	a.Equal(t, cap(router.Modules()), InitialContextCapacity,
 		"modules slice capacity mismatch.")
 }
 
@@ -87,8 +88,8 @@ func TestSubrouter(t *testing.T) {
 
 	a.NotNil(t, subrouter, "subrouter creation failed.")
 	a.NotEqual(t, router, subrouter, "subrouter must not equals parent.")
-	a.NotNil(t, subrouter.parent, "subrouter should have parent.")
-	a.Equal(t, subrouter.parent, router, "subrouter has wrong parent.")
+	a.NotNil(t, subrouter.Parent(), "subrouter should have parent.")
+	a.Equal(t, subrouter.Parent(), router, "subrouter has wrong parent.")
 }
 
 func TestSimpleGet(t *testing.T) {

@@ -1,8 +1,9 @@
-package zaiuz
+package zaiuz_test
 
 import "testing"
 import "database/sql"
 import "database/sql/driver"
+import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
 
 var key Key = NewKey()

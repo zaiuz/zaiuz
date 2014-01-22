@@ -28,6 +28,19 @@ func NewRouter() *Router {
 	return &Router{nil, mux.NewRouter(), modules}
 }
 
+// Parent() method returns the parent router if this is a child router, or nil otherwise.
+func (router *Router) Parent() *Router {
+	return router.parent
+}
+
+// Router() method returns the internal mux.Router from gorilla web toolkit for direct
+// access. This method is not recommended unless you want to access specifici
+// functionality provided by the gorilla web toolkit that does not yet have an equivalent
+// in zaiuz.
+func (router *Router) Router() *mux.Router {
+	return router.router
+}
+
 // Retreive all modules included into this router so far. Also resolve parent's list of
 // modules if called from a subrouter.
 func (router *Router) Modules() []Module {

@@ -1,7 +1,8 @@
-package zaiuz
+package zaiuz_test
 
 import "testing"
 import "github.com/zaiuz/testutil"
+import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
 
 func TestNewContext(t *testing.T) {
@@ -10,7 +11,6 @@ func TestNewContext(t *testing.T) {
 
 	a.Equal(t, result.Request, request, "request not saved.")
 	a.Equal(t, result.ResponseWriter, response, "response writer not saved.")
-	a.Nil(t, result.objects, "context objects should be nil until needed.")
 }
 
 func TestContextObjects(t *testing.T) {
