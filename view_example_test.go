@@ -26,8 +26,7 @@ func ExampleHtmlView() {
 		Content:        "The quick brown fox jumps over the lazy dog.",
 	}
 
-	response, request := testutil.NewTestRequestPair()
-	context := NewContext(response, request)
+	context := testutil.NewTestContext()
 
 	ChildView.Render(context, child)
 

@@ -41,14 +41,13 @@ func TestSubview(t *testing.T) {
 }
 
 func TestRenderContentType(t *testing.T) {
+	context := testutil.NewTestContext()
+	recorder := context.ResponseWriter.(*httptest.ResponseRecorder)
+
 	singleView := NewHtmlView(singleFile)
-	response, request := testutil.NewTestRequestPair()
-	context := NewContext(response, request)
 	singleView.Render(context, nil)
 
-	recorder := response.(*httptest.ResponseRecorder)
 	contentType := recorder.HeaderMap["Content-Type"]
-
 	a.NotEmpty(t, contentType, "Content-Type header was nil or empty.")
 	a.Contains(t, contentType[0], "text/html", "Content-Type not text/html.")
 }
@@ -126,8 +125,7 @@ func mustRenderToString(view *HtmlView, data interface{}) string {
 type renderFunc func(*Context, interface{}) error
 
 func renderToStringCore(renderer renderFunc, data interface{}) (string, error) {
-	response, request := testutil.NewTestRequestPair()
-	context := NewContext(response, request)
+	context := testutil.NewTestContext()
 
 	e := renderer(context, data)
 	if e != nil {
