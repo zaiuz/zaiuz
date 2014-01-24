@@ -9,6 +9,7 @@ import a "github.com/stretchr/testify/assert"
 var key Key = NewKey()
 var _ sql.Scanner = &key
 var _ driver.Valuer = &key
+var _ driver.Valuer = key // extra ver for convenience
 
 func TestNewKey(t *testing.T) {
 	result := NewKey()

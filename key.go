@@ -25,7 +25,7 @@ func (key *Key) Scan(src interface{}) (e error) {
 	return
 }
 
-func (key *Key) Value() (driver.Value, error) {
-	// TODO: validate
-	return driver.Value(string(*key)), nil
+// TODO: validate
+func (key Key) Value() (driver.Value, error) {
+	return driver.Value(string(key)), nil
 }
