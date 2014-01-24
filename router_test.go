@@ -117,14 +117,14 @@ func TestMethodRouting(t *testing.T) {
 
 func TestStaticFiles(t *testing.T) {
 	server := newTestServer(func(router *Router) {
-		router.Static("/files", "./testviews")
+		router.Static("/files", "./public")
 	})
 	defer server.Close()
 
-	content, e := ioutil.ReadFile("./testviews/single.html")
+	content, e := ioutil.ReadFile("./public/test_blob.bin")
 	a.NoError(t, e)
 
-	testutil.HttpGet(t, server.URL+"/files/single.html").Expect(200, string(content))
+	testutil.HttpGet(t, server.URL+"/files/test_blob.bin").Expect(200, string(content))
 }
 
 func TestSubrouterRouting(t *testing.T) {
