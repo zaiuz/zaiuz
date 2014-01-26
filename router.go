@@ -18,11 +18,6 @@ type Router struct {
 
 var _ http.Handler = &Router{}
 
-// Action is the main interaction unit of zaiuz. This is zaiuz's analog to the standard
-// http.ServeHTTP method. Most methods that work on the Context should follows the same
-// function signature.
-type Action func(ctx *Context)
-
 func NewRouter() *Router {
 	modules := make([]Module, 0, InitialContextCapacity)
 	return &Router{nil, mux.NewRouter(), modules}
