@@ -3,83 +3,44 @@ package zaiuz_test
 import "net/http/httptest"
 import "testing"
 import "io/ioutil"
-import "fmt"
-import "time"
 import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
+import "github.com/zaiuz/results"
 import "github.com/zaiuz/testutil"
 
 const TextForGet string = "GETGETGET"
 const TextForPost string = "POSTPOSTPOST"
 const TextForGetPost string = TextForGet + TextForPost
 
-type DummyModule struct {
-	attachCalled bool
-	attachTime   time.Time
-	detachCalled bool
-	detachTime   time.Time
-}
-
-type PanicModule struct{}
-
-var _ Module = new(DummyModule)
-var _ Module = new(PanicModule)
-
-func (m *DummyModule) Reset() {
-	zero := time.Unix(0, 0)
-	m.attachCalled, m.detachCalled = false, false
-	m.attachTime, m.detachTime = zero, zero
-}
-
-func (m *DummyModule) Attach(c *Context) error {
-	m.attachCalled = true
-	m.attachTime = time.Now()
-	return nil
-}
-
-func (m *DummyModule) Detach(c *Context) error {
-	m.detachCalled = true
-	m.detachTime = time.Now()
-	return nil
-}
-
-func (p *PanicModule) Attach(c *Context) error {
-	return fmt.Errorf("PanicModule test error.")
-}
-
-func (p *PanicModule) Detach(c *Context) error {
-	return fmt.Errorf("PanicModule test error.")
-}
-
 func TestNewRouter(t *testing.T) {
 	router := NewRouter()
 	a.Nil(t, router.Parent(), "new router should not have parent.")
 	a.NotNil(t, router.Router(), "mux router not initialized.")
-	a.Equal(t, cap(router.Modules()), InitialContextCapacity,
-		"modules slice capacity mismatch.")
+	a.Equal(t, cap(router.Filters()), InitialContextCapacity,
+		"filters slice capacity mismatch.")
 }
 
 func TestIncludes(t *testing.T) {
 	const UrlPath = "/subsection"
 
 	router := NewRouter()
-	a.Empty(t, router.Modules(), "module list not empty initially.")
+	a.Empty(t, router.Filters(), "filter list not empty initially.")
 
 	subrouter := router.Subrouter(UrlPath)
-	a.Empty(t, subrouter.Modules(), "empty router's subrouter module list not empty.")
+	a.Empty(t, subrouter.Filters(), "empty router's subrouter filter list not empty.")
 
-	mod := new(DummyModule)
-	router.Include(mod)
-	a.Equal(t, len(router.Modules()), 1, "module list has incorrect length.")
-	a.Equal(t, len(subrouter.Modules()), 1, "subrouter module list has incorrect length.")
-	a.Equal(t, router.Modules()[0], mod, "module list has wrong reference.")
-	a.Equal(t, subrouter.Modules()[0], mod, "subrouter module list has wrong reference.")
+	filter := DudFilter()
+	router.Include(filter)
+	a.Equal(t, len(router.Filters()), 1, "module list has incorrect length.")
+	a.Equal(t, len(subrouter.Filters()), 1, "subrouter module list has incorrect length.")
+	a.Equal(t, router.Filters()[0], filter, "module list has wrong reference.")
+	a.Equal(t, subrouter.Filters()[0], filter, "subrouter module list has wrong reference.")
 
-	mod = new(DummyModule)
-	subrouter.Include(mod)
-	a.Equal(t, len(router.Modules()), 1, "subrouter Include() should not effects parent.")
-	a.Equal(t, len(subrouter.Modules()), 2, "subrouter Include() does not take effect.")
-	a.Equal(t, subrouter.Modules()[1], mod, "subrouter module list has wrong reference.")
+	filter = DudFilter()
+	subrouter.Include(filter)
+	a.Equal(t, len(router.Filters()), 1, "subrouter Include() should not effects parent.")
+	a.Equal(t, len(subrouter.Filters()), 2, "subrouter Include() does not take effect.")
+	a.Equal(t, subrouter.Filters()[1], filter, "subrouter module list has wrong reference.")
 }
 
 func TestSubrouter(t *testing.T) {
@@ -140,25 +101,16 @@ func TestSubrouterRouting(t *testing.T) {
 	testutil.HttpGet(t, server.URL+"/section/").Expect(200, TextForGet+"inner")
 }
 
-func TestModulePanic(t *testing.T) {
-	server := newTestServer(func(router *Router) {
-		router.Include(new(PanicModule))
-		router.Get("/", stringAction(TextForGet))
-	})
-
-	testutil.HttpGet(t, server.URL).ExpectPattern(500, "^PanicModule")
-}
-
 func TestModuleInvocation(t *testing.T) {
-	outer, inner := new(DummyModule), new(DummyModule)
+	outer, inner := testutil.NewTestFilter(), testutil.NewTestFilter()
 
-	// TODO: Test that static files still cause modules  to be invoked.
+	// TODO: Test integration with static files.
 	server := newTestServer(func(router *Router) {
-		router.Include(outer)
+		router.Include(outer.Filter)
 		router.Get("/", stringAction(TextForGet))
 
 		section := router.Subrouter("/section")
-		section.Include(inner)
+		section.Include(inner.Filter)
 		section.Get("/", stringAction(TextForGet))
 	})
 	defer server.Close()
@@ -167,22 +119,20 @@ func TestModuleInvocation(t *testing.T) {
 	inner.Reset()
 
 	testutil.HttpGet(t, server.URL).Expect(200, TextForGet)
-	a.True(t, outer.attachCalled, "outer module not attached.")
-	a.True(t, outer.detachCalled, "outer module not detached.")
-	a.True(t, outer.attachTime.Before(outer.detachTime), "detached before attaching.")
-	a.False(t, inner.attachCalled, "inner module incorrectly attached.")
-	a.False(t, inner.detachCalled, "inner module incorrectly detached.")
+	a.True(t, outer.Called, "outer filter not called.")
+	a.True(t, outer.Finished, "outer filter does not finish.")
+	a.False(t, inner.Called, "inner filter not called.")
 
 	outer.Reset()
 	inner.Reset()
 
 	testutil.HttpGet(t, server.URL+"/section/").Expect(200, TextForGet)
-	a.True(t, outer.attachCalled, "outer module not attached.")
-	a.True(t, inner.attachCalled, "inner module not attached.")
-	a.True(t, outer.attachTime.Before(inner.attachTime), "inner module attach prematurely.")
-	a.True(t, outer.detachCalled, "outer module not detached.")
-	a.True(t, inner.detachCalled, "inner module not detached.")
-	a.True(t, outer.detachTime.After(inner.detachTime), "outer module detach prematurely.")
+	a.True(t, outer.Called, "outer filter not called.")
+	a.True(t, inner.Called, "inner filter not called.")
+	a.True(t, outer.CallTime.Before(inner.CallTime), "inner filter called prematurely.")
+	a.True(t, outer.Finished, "outer filter does not finish.")
+	a.True(t, inner.Finished, "inner filter does not finish.")
+	a.True(t, outer.FinishTime.After(inner.FinishTime), "inner filter finish prematurely.")
 }
 
 func newTestServer(setup func(router *Router)) *httptest.Server {
@@ -193,26 +143,8 @@ func newTestServer(setup func(router *Router)) *httptest.Server {
 }
 
 func stringAction(text string) Action {
-	return Action(func(c *Context) {
-		c.ResponseWriter.Write([]byte(text))
+	result := results.NewStringResult(200, text)
+	return Action(func(c *Context) Result {
+		return result
 	})
-}
-
-func moduleListEquals(a, b []Module) bool {
-	switch {
-	case len(a) != len(b):
-		return false
-	case cap(a) != cap(b):
-		return false
-	}
-
-	for _, ma := range a {
-		for _, mb := range b {
-			if ma != mb {
-				return false
-			}
-		}
-	}
-
-	return true
 }

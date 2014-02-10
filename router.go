@@ -1,26 +1,22 @@
 package zaiuz
 
-import "fmt"
 import "net/http"
 import "github.com/gorilla/mux"
 
-// Router is a thin wrapper over Gorrila web toolkit's mux router
-// (http://www.gorillatoolkit.org/pkg/mux) that provides helper for common routing actions
-// such as Get/Post actions. Zaiuz's router also requires the Action function signature.
-//
-// Zaiuz's router also provide mechanism for executing Module Attach/Detach and other
-// related hooks without having to explicitly call them from your Action code.
+// Router is a wrapper over Gorrila web toolkit's mux router
+// (http://www.gorillatoolkit.org/pkg/mux) that provides helpers that work with standard
+// zaiuz Action function signature as well as Filters.
 type Router struct {
 	parent  *Router
 	router  *mux.Router
-	modules []Module
+	filters []Filter
 }
 
 var _ http.Handler = &Router{}
 
 func NewRouter() *Router {
-	modules := make([]Module, 0, InitialContextCapacity)
-	return &Router{nil, mux.NewRouter(), modules}
+	filters := make([]Filter, 0, InitialContextCapacity)
+	return &Router{nil, mux.NewRouter(), filters}
 }
 
 // Parent() method returns the parent router if this is a child router, or nil otherwise.
@@ -38,20 +34,20 @@ func (router *Router) Router() *mux.Router {
 
 // Retreive all modules included into this router so far. Also resolve parent's list of
 // modules if called from a subrouter.
-func (router *Router) Modules() []Module {
+func (router *Router) Filters() []Filter {
 	if router.parent == nil {
-		return router.modules
+		return router.filters
 	} else {
-		return append(router.parent.modules, router.modules...)
+		return append(router.parent.filters, router.filters...)
 	}
 }
 
-// Creates a child router. Analogous to calling mux's Router.Subrouter function.
-// Additionally, any zaiuz's Module added to a subrouter are scoped to only that subrouter
-// and any child subrouters.
+// Creates a child router. Analogous to calling mux's Router.Subrouter function but also
+// carry over all the Filters included so far as well. Filters added in the subrouter only
+// run inside the subrouter.
 func (router *Router) Subrouter(path string) *Router {
 	subrouter := router.router.PathPrefix(path).Subrouter()
-	result := &Router{router, subrouter, []Module{}}
+	result := &Router{router, subrouter, []Filter{}}
 	return result
 }
 
@@ -59,9 +55,9 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.router.ServeHTTP(w, r)
 }
 
-// Include a Module in the current router for all mapped (and future) actions.
-func (router *Router) Include(m ...Module) {
-	router.modules = append(router.modules, m...)
+// Include a Filter in the current router for all mapped (and future) actions.
+func (router *Router) Include(filters ...Filter) {
+	router.filters = append(router.filters, filters...)
 }
 
 // Maps an Action to the specified URL Path and HTTP GET method.
@@ -93,33 +89,15 @@ func (router *Router) Static(urlPath, filePath string) *Router {
 }
 
 func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.Request) {
-	modules := router.Modules() // resolve module list w/ parents immediately
+	// apply innermost filter first
+	filters := router.Filters()
+	for i := len(filters) - 1; i >= 0; i-- {
+		action = filters[i](action)
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := NewContext(w, r)
-		defer func() {
-			if r := recover(); r != nil {
-				// TODO: Errors after WriteHead?
-				w.WriteHeader(500)
-				w.Write([]byte(fmt.Sprintf("%s", r)))
-			}
-		}()
-
-		for _, mod := range modules {
-			// TODO: Detach should be given chance to recover from errors.
-			e := mod.Attach(ctx)
-			if e != nil {
-				panic(e) // TODO: Better handover to http pkg??
-			}
-
-			defer func(m Module) {
-				e := m.Detach(ctx)
-				if e != nil {
-					panic(e) // TODO: Better handover to http pkg?
-				}
-			}(mod)
-		}
-
-		action(ctx)
+		context := NewContext(w, r)
+		result := action(context)
+		result.Render(context)
 	}
 }
