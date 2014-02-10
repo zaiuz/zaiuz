@@ -91,8 +91,9 @@ func (router *Router) Static(urlPath, filePath string) *Router {
 func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.Request) {
 	// apply innermost filter first
 	filters := router.Filters()
-	for i := len(filters) - 1; i >= 0; i-- {
-		action = filters[i](action)
+	for i := range filters {
+		// TODO: Detect nil
+		action = filters[len(filters)-1-i](action)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

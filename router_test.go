@@ -144,7 +144,5 @@ func newTestServer(setup func(router *Router)) *httptest.Server {
 
 func stringAction(text string) Action {
 	result := results.NewStringResult(200, text)
-	return Action(func(c *Context) Result {
-		return result
-	})
+	return Action(func(c *Context) Result { return result })
 }
