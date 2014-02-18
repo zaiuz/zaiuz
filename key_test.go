@@ -16,7 +16,7 @@ func TestNewKey(t *testing.T) {
 	a.NotNil(t, result, "result is not nil.")
 }
 
-func TestScan(t *testing.T) {
+func TestKey_Scan(t *testing.T) {
 	var key Key
 
 	test := func(src interface{}) {
@@ -29,7 +29,7 @@ func TestScan(t *testing.T) {
 	test([]byte("string"))
 }
 
-func TestValue(t *testing.T) {
+func TestKey_Value(t *testing.T) {
 	k := NewKey()
 	v, e := k.Value()
 	a.NoError(t, e)
