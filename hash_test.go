@@ -23,6 +23,21 @@ func TestHash_MatchOriginal(t *testing.T) {
 	a.True(t, result.MatchOriginal(original), "hash compares wrong.")
 }
 
+func TestHash_MatchOriginal_AfterRoundtrip(t *testing.T) {
+	original := "123456" // world's most famous password
+	hash := NewHash(original)
+	value, e := hash.Value()
+	a.NoError(t, e)
+
+	// roundtrip to raw bytes and back
+	bytes := []byte(value.(string))
+	hash = Hash("")
+	hash.Scan(bytes)
+
+	a.False(t, hash.MatchOriginal("something else"), "hash compares wrong roundtripped.")
+	a.True(t, hash.MatchOriginal(original), "hash compares wrong roundtripped.")
+}
+
 func TestHash_Scan(t *testing.T) {
 	var hash Hash
 

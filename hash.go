@@ -31,9 +31,9 @@ func (hash Hash) MatchOriginal(original string) bool {
 func (hash *Hash) Scan(src interface{}) (e error) {
 	switch src.(type) {
 	case string:
-		*hash = NewHash(src.(string))
+		*hash = Hash(src.(string))
 	case []byte:
-		*hash = NewHash(string(src.([]byte)))
+		*hash = Hash(string(src.([]byte)))
 	default:
 		e = fmt.Errorf("cannot convert driver value `%v` to a Hash value.", src)
 	}
