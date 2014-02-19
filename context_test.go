@@ -2,6 +2,7 @@ package zaiuz_test
 
 import "testing"
 import "github.com/zaiuz/testutil"
+import "github.com/zaiuz/results"
 import . "github.com/zaiuz/zaiuz"
 import a "github.com/stretchr/testify/assert"
 
@@ -55,4 +56,34 @@ func TestContextObjects(t *testing.T) {
 	result, ok = context.GetOk(KEY)
 	a.False(t, ok, "ok true for deleted key.")
 	a.Nil(t, result, "result non-nil for deleted key.")
+}
+
+func TestNewContext_WithRouteVars(t *testing.T) {
+	c := make(chan *Context)
+	done := make(chan bool)
+
+	// TODO: How to test this without relying on the mux router or the test server?
+	server := newTestServer(func(router *Router) {
+		router.Get("/with/{id}", func(ctx *Context) Result {
+			c <- ctx
+			done <- true
+			return results.String(200, "OK")
+		})
+	})
+
+	go func() {
+		testutil.HttpGet(t, server.URL+"/with/asdf").Expect(200, "OK")
+		done <- true
+	}()
+
+	ctx := <-c
+	raw, ok := ctx.GetOk("id")
+	a.True(t, ok, "router params not saved to context.")
+
+	result, ok := raw.(string)
+	a.True(t, ok, "router params not a string.")
+	a.Equal(t, result, "asdf", "saved router params has wrong value.")
+
+	<-done
+	<-done
 }

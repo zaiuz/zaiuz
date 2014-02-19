@@ -46,9 +46,16 @@ func (router *Router) Filters() []Filter {
 // carry over all the Filters included so far as well. Filters added in the subrouter only
 // run inside the subrouter.
 func (router *Router) Subrouter(path string) *Router {
-	subrouter := router.router.PathPrefix(path).Subrouter()
-	result := &Router{router, subrouter, []Filter{}}
-	return result
+	var subrouter *mux.Router
+	if path == "" {
+		// PathPrefix with empty string causes routing to not match so we need to sepcial case
+		// here.
+		subrouter = router.router.NewRoute().Subrouter()
+	} else {
+		subrouter = router.router.PathPrefix(path).Subrouter()
+	}
+
+	return &Router{router, subrouter, []Filter{}}
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +105,12 @@ func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		context := NewContext(w, r)
+
+		vars := mux.Vars(r)
+		for key, value := range vars {
+			context.Set(key, value)
+		}
+
 		result := action(context)
 		result.Render(context)
 	}

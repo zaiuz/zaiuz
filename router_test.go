@@ -93,12 +93,15 @@ func TestSubrouterRouting(t *testing.T) {
 		router.Get("/", stringAction(TextForGet))
 		section := router.Subrouter("/section")
 		section.Get("/", stringAction(TextForGet+"inner"))
+		empty := router.Subrouter("")
+		empty.Get("/empty", stringAction(TextForGet+"empty"))
 	})
 	defer server.Close()
 
 	// TODO: Handle missing '/'
 	testutil.HttpGet(t, server.URL).Expect(200, TextForGet)
 	testutil.HttpGet(t, server.URL+"/section/").Expect(200, TextForGet+"inner")
+	testutil.HttpGet(t, server.URL+"/empty").Expect(200, TextForGet+"empty")
 }
 
 func TestModuleInvocation(t *testing.T) {
@@ -135,6 +138,7 @@ func TestModuleInvocation(t *testing.T) {
 	a.True(t, outer.FinishTime.After(inner.FinishTime), "inner filter finish prematurely.")
 }
 
+// TODO: Move this function to testutil? Since this is also used in context_test
 func newTestServer(setup func(router *Router)) *httptest.Server {
 	router := NewRouter()
 	server := httptest.NewServer(router)
