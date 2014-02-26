@@ -112,6 +112,10 @@ func (router *Router) actionShim(action Action) func(http.ResponseWriter, *http.
 		}
 
 		result := action(context)
-		result.Render(context)
+		// TODO: panic filter or better gracefully handle?
+		e := result.Render(context)
+		if e != nil {
+			panic(e)
+		}
 	}
 }
