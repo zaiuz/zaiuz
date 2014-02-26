@@ -13,7 +13,8 @@ var _ driver.Valuer = key // extra ver for convenience
 
 func TestNewKey(t *testing.T) {
 	result := NewKey()
-	a.NotNil(t, result, "result is not nil.")
+	a.NotNil(t, result, "result is nil.")
+	a.NotEmpty(t, result, "result is empty.")
 }
 
 func TestKey_Scan(t *testing.T) {
